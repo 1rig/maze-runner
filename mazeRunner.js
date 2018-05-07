@@ -3,8 +3,10 @@ let heading = 0;
 let distance_travelled = 0;
 let old_location = 0;
 let blocked = false;
-const SPEED_THRESHOLD = 10;
+const SPEED_THRESHOLD = 5;
 const DISTANCE_THRESHOLD = 10;
+let old_velocity = 0;
+let velocity_zero_count = 0;
 
 async function startProgram() {
 	// Write code here
@@ -15,10 +17,12 @@ async function startProgram() {
 		b: 0
 	});
 
-	await roll(heading, SPEED, 2);
+	await roll(heading, SPEED);
+	await delay(0.2);
 
 	while (true) {
-		let velocity = Math.sqrt(getVelocity().x ** 2 + getVelocity().y ** 2);
+		let current_velocity = getEffectiveMetric(getVelocity);
+		let accl = getEffectiveMetric(getAcceleration);
 
 		await delay(0.2);
 
@@ -30,17 +34,31 @@ async function startProgram() {
 		}
 
 		// collision
-		if (velocity < SPEED_THRESHOLD) {
-			await handleCollision();
-		} else {
-			//continue
-			await roll(heading, SPEED, 2);
+		//await speak(Math.ceil(current_velocity) + "", true);
+		if (current_velocity < SPEED_THRESHOLD) {
+			//			if ((current_velocity - old_velocity) < 0) {
+			velocity_zero_count++;
+			if (velocity_zero_count == 2) {
+				velocity_zero_count = 0;
+				
+				await handleCollision();
+			}
+
 		}
+		/*
+					else {
+						//continue
+						await roll(heading, SPEED, 2);
+					}
+		*/
 	}
 }
 
 async function handleCollision() {
-//		await speak("handle collision", true);
+	//await speak("handle collision", true);
+
+	//stopRoll();
+
 	setMainLed({
 		r: 255,
 		g: 0,
@@ -49,7 +67,7 @@ async function handleCollision() {
 
 	blocked = true;
 
-	await roll(heading, -10, 1);
+	await roll(heading, -20, 0.5);
 
 	let current_location = Math.sqrt(getLocation().x ** 2 + getLocation().y ** 2);
 
@@ -58,32 +76,38 @@ async function handleCollision() {
 
 	old_location = current_location;
 
-//		await speak(Math.ceil(distance_travelled) + "", true);
+	await speak(Math.ceil(distance_travelled) + "", true);
 	if (distance_travelled < DISTANCE_THRESHOLD) {
 		// turn right
-		await turnHeadingRight();
+		turnHeadingRight();
 	} else {
 		// turn left
-		await turnHeadingLeft();
+		turnHeadingLeft();
 	}
-
 	setMainLed({
 		r: 0,
 		g: 255,
 		b: 0
 	});
 
-	await roll(heading, SPEED, 2);
+	await roll(heading, SPEED);
+	await delay(1);
+
+
 }
 
-async function turnHeadingRight() {
-//		await speak("Turn right", true);
+function turnHeadingRight() {
+	//		await speak("Turn right", true);
 	heading = getHeading() + 180;
 }
 
-async function turnHeadingLeft() {
-//		await speak("turn left", true);
+function turnHeadingLeft() {
+	//		await speak("turn left", true);
 	heading = getHeading() - 90;
+}
+
+function getEffectiveMetric(metric) {
+	return Math.sqrt(metric().x ** 2 + metric().y ** 2);
 }
 
 async function celebrate() {
