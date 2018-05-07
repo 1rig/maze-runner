@@ -4,9 +4,11 @@ let distance_travelled = 0;
 let old_location = 0;
 let blocked = false;
 const SPEED_THRESHOLD = 5;
-const DISTANCE_THRESHOLD = 10;
+const DISTANCE_THRESHOLD = 15;
 let old_velocity = 0;
 let velocity_zero_count = 0;
+let old_x_pos = 0;
+let old_y_pos = 0;
 
 async function startProgram() {
 	// Write code here
@@ -40,7 +42,7 @@ async function startProgram() {
 			velocity_zero_count++;
 			if (velocity_zero_count == 2) {
 				velocity_zero_count = 0;
-				
+
 				await handleCollision();
 			}
 
@@ -71,11 +73,19 @@ async function handleCollision() {
 
 	let current_location = Math.sqrt(getLocation().x ** 2 + getLocation().y ** 2);
 
-	// what is the distance travelled
-	distance_travelled = Math.abs(current_location - old_location);
+	let new_x_pos = getLocation().x;
+	let new_y_pos = getLocation().y;
+	await speak(old_x_pos + "and " + new_x_pos);
 
-	old_location = current_location;
+	// what is the distance travelled based on x axis travel or y axis travel
+	//distance_travelled = Math.abs(current_location - old_location);
+	distance_travelled = getDistanceTravelled(old_x_pos, old_y_pos, new_x_pos, new_y_pos, getHeading());
 
+	//old_location = current_location;
+	old_x_pos = new_x_pos;
+	old_y_pos = new_y_pos;
+
+	//await speak("" + getHeading(), true);
 	await speak(Math.ceil(distance_travelled) + "", true);
 	if (distance_travelled < DISTANCE_THRESHOLD) {
 		// turn right
@@ -94,6 +104,16 @@ async function handleCollision() {
 	await delay(1);
 
 
+}
+
+function getDistanceTravelled(old_x_pos, old_y_pos, new_x_pos, new_y_pos, heading) {
+	if (heading > 340 || heading < 20 || (heading > 160 && heading < 200)) {
+
+		return Math.abs(new_y_pos - old_y_pos);
+	} else {
+
+		return Math.abs(new_x_pos - old_x_pos);
+	}
 }
 
 function turnHeadingRight() {
